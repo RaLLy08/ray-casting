@@ -1,6 +1,6 @@
 class Canvas {
-    static WIDTH = 900;
-    static HEIGHT = 800;
+    static WIDTH = 600;
+    static HEIGHT = 500;
 
     constructor(canvas) {
         this.canvas = canvas;
@@ -36,11 +36,17 @@ class Canvas {
         this.ctx.font = '24px serif';
         this.ctx.fillText(text, x + 20, y + 20);
     }
+    drawRect(x, y, width, height, opacity=1) {
+        this.ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+        this.ctx.fillRect(x, y, width, height);
+    }
 }
 
 const canvasEl = document.getElementById("canvas");
+const canvasEl2 = document.getElementById("canvas2");
 
 const canvas = new Canvas(canvasEl);
+const canvas2 = new Canvas(canvasEl2);
 
 const mouse = {
     pos: new Vector(0, 0),
@@ -157,10 +163,14 @@ class Ray {
 
 class Particle {
     constructor({
-        viewAngle = Math.PI / 3,
+        viewAngle = Math.PI / 6,
         viewDirection = 0,
+        x = Canvas.WIDTH / 2,
+        y = Canvas.HEIGHT / 2,
+        raysCount = Vector.toDegrees(viewAngle),
     }={}) {
-        this.pos = new Vector(Canvas.WIDTH / 2, Canvas.HEIGHT / 2);
+        this.pos = new Vector(x, y);
+        this.raysCount = raysCount;
         this.rays = [];
         this.intersections = [];
         this.viewAngle = viewAngle;
@@ -177,9 +187,7 @@ class Particle {
         this.viewDirection = angle - shift;
     }
 
-    setRays({
-        raysCount = Vector.toDegrees(this.viewAngle)
-    }={}) {
+    setRays() {
         this.rays = [];
 
         const viewAngle = Vector.toDegrees(this.viewAngle);
@@ -190,7 +198,7 @@ class Particle {
 
         const totalSteps = toIndex - fromIndex;
         
-        const step = totalSteps / (raysCount - 1);
+        const step = totalSteps / (this.raysCount - 1);
 
         for (let i = fromIndex; i <= toIndex; i+=step) {
             this.rays.push(
@@ -211,6 +219,7 @@ class Particle {
 
                 if (intersection) {
                     const distance = this.pos.distance(intersection);
+                    
                     if (distance < record) {
                         record = distance;
                         closest = intersection;
@@ -249,18 +258,30 @@ const frameWalls = [
 
 const walls = [
     ...frameWalls,
-    new Boundary(600, 100, 600, 200),
-    new Boundary(400, 200, 700, 800),
+    new Boundary(100, 100, 100, 500),
+    new Boundary(100, 100, 500, 100),
+    new Boundary(500, 100, 500, 400),
+    new Boundary(200, 400, 500, 400),
+    new Boundary(200, 400, 200, 200),
+    new Boundary(200, 200, 400, 200),
+    new Boundary(400, 200, 400, 300),
+    new Boundary(400, 300, 300, 300),
 ]
 
-const particle = new Particle();
+const particle = new Particle({
+    raysCount: 100,
+    x: 50,
+    y: Canvas.HEIGHT - 100,
+});
 
 const frame = () => {
     canvas.clear();
+    canvas2.clear();
+
     requestAnimationFrame(frame);
 
     const keyboardMovementVector = getKeyboardMovementVector();
-    const keyboardMovementSpeed = 5;
+    const keyboardMovementSpeed = 2.5;
 
     const particleMouseVector = new Vector(
         mouse.pos.x - particle.pos.x,
@@ -274,9 +295,32 @@ const frame = () => {
     particle.setRays();
     particle.setIntersections(walls);
 
-
     walls.forEach(wall => wall.draw());
     particle.draw();
+
+    particle.intersections.forEach((intersection, i, arr) => {
+        const steps = arr.length;
+        const step = Canvas.WIDTH / steps;
+
+        const dist = particle.pos.distance(intersection);
+
+        const opacity = (1 - dist / 800);
+        const wallH = Canvas.HEIGHT/(dist * 0.03);
+
+        canvas2.drawRect(
+            i*step, Canvas.HEIGHT/2,
+            step,  wallH/2,
+            opacity
+        );
+
+        canvas2.drawRect(
+            i*step, Canvas.HEIGHT/2 - wallH/2,
+            step, wallH/2,
+            opacity
+        );
+    });
+
+
 }
 
 frame();
