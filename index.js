@@ -36,8 +36,8 @@ class Canvas {
         this.ctx.font = '24px serif';
         this.ctx.fillText(text, x + 20, y + 20);
     }
-    drawRect(x, y, width, height, opacity=1) {
-        this.ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+    drawRect(x, y, width, height, r=0, g=0, b=0) {
+        this.ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         this.ctx.fillRect(x, y, width, height);
     }
 }
@@ -163,7 +163,7 @@ class Ray {
 
 class Particle {
     constructor({
-        viewAngle = Math.PI / 6,
+        viewAngle = Math.PI / 3,
         viewDirection = 0,
         x = Canvas.WIDTH / 2,
         y = Canvas.HEIGHT / 2,
@@ -269,7 +269,7 @@ const walls = [
 ]
 
 const particle = new Particle({
-    raysCount: 100,
+    raysCount: Canvas.WIDTH,
     x: 50,
     y: Canvas.HEIGHT - 100,
 });
@@ -281,7 +281,8 @@ const frame = () => {
     requestAnimationFrame(frame);
 
     const keyboardMovementVector = getKeyboardMovementVector();
-    const keyboardMovementSpeed = 2.5;
+
+    const keyboardMovementSpeed = 2;
 
     const particleMouseVector = new Vector(
         mouse.pos.x - particle.pos.x,
@@ -298,26 +299,49 @@ const frame = () => {
     walls.forEach(wall => wall.draw());
     particle.draw();
 
-    particle.intersections.forEach((intersection, i, arr) => {
-        const steps = arr.length;
-        const step = Canvas.WIDTH / steps;
+    const steps = particle.intersections.length;
+    const step = Canvas.WIDTH / steps;
 
+    particle.intersections.forEach((intersection, i) => {
         const dist = particle.pos.distance(intersection);
 
-        const opacity = (1 - dist / 800);
-        const wallH = Canvas.HEIGHT/(dist * 0.03);
+        const maxShadow = 125;
+        const opacity = maxShadow*(1 - (dist / 600) );
+
+        const wallH = Canvas.HEIGHT/(dist * 0.011);
+
+        const halfY2 = wallH/2
+        const topHalfY1 = Canvas.HEIGHT/2 - halfY2;
+
+        const wallPositionX = i*step + step/2;
 
         canvas2.drawRect(
-            i*step, Canvas.HEIGHT/2,
-            step,  wallH/2,
-            opacity
+            wallPositionX, topHalfY1,
+            step, halfY2,
+            opacity,
+            opacity,    
+            opacity,
         );
 
         canvas2.drawRect(
-            i*step, Canvas.HEIGHT/2 - wallH/2,
-            step, wallH/2,
+            wallPositionX, Canvas.HEIGHT/2,
+            step, halfY2,
+            opacity,
+            opacity,
             opacity
         );
+
+        // top
+        // canvas2.drawRect(
+        //     i*step, 0,
+        //     step, Canvas.HEIGHT/2 - halfY2,
+        // );
+
+        // flat
+        // canvas2.drawRect(
+        //     i*step, halfY2 + Canvas.HEIGHT/2,
+        //     step, Canvas.HEIGHT,
+        // );
     });
 
 
