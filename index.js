@@ -116,6 +116,7 @@ class Ray {
     constructor(pos, angle) {
         this.pos = pos;
         this.dir = new Vector(Math.cos(angle), Math.sin(angle));
+        this.angle = Vector.toDegrees(this.dir.fullAngle());
     }
 
     draw() {
@@ -216,11 +217,12 @@ class Particle {
 
             walls.forEach((wall) => {
                 const intersection = ray.getIntersection(wall);
-
                 if (intersection) {
                     const distance = this.pos.distance(intersection);
                     
                     if (distance < record) {
+                        intersection.angle = ray.angle;
+
                         record = distance;
                         closest = intersection;
                     }
@@ -258,6 +260,7 @@ const frameWalls = [
 
 const walls = [
     ...frameWalls,
+    new Boundary(50, 100, 50, 500),
     new Boundary(100, 100, 100, 500),
     new Boundary(100, 100, 500, 100),
     new Boundary(500, 100, 500, 400),
@@ -269,8 +272,8 @@ const walls = [
 ]
 
 const particle = new Particle({
-    raysCount: Canvas.WIDTH,
-    x: 50,
+    raysCount: 600,
+    x: 25,
     y: Canvas.HEIGHT - 100,
 });
 
@@ -282,7 +285,7 @@ const frame = () => {
 
     const keyboardMovementVector = getKeyboardMovementVector();
 
-    const keyboardMovementSpeed = 2;
+    const keyboardMovementSpeed = 1;
 
     const particleMouseVector = new Vector(
         mouse.pos.x - particle.pos.x,
@@ -301,14 +304,19 @@ const frame = () => {
 
     const steps = particle.intersections.length;
     const step = Canvas.WIDTH / steps;
+    const midRay = particle.intersections[Math.floor(steps / 2)];
+
 
     particle.intersections.forEach((intersection, i) => {
-        const dist = particle.pos.distance(intersection);
+        // angle between middle ray and current ray
+        const angleBetta = intersection.angle - midRay.angle;
+
+        const dist = particle.pos.distance(intersection) * Math.cos(Vector.toRadians(angleBetta));
 
         const maxShadow = 125;
         const opacity = maxShadow*(1 - (dist / 600) );
 
-        const wallH = Canvas.HEIGHT/(dist * 0.011);
+        const wallH = Canvas.HEIGHT/(dist * 0.02); // 0.011
 
         const halfY2 = wallH/2
         const topHalfY1 = Canvas.HEIGHT/2 - halfY2;
@@ -343,8 +351,6 @@ const frame = () => {
         //     step, Canvas.HEIGHT,
         // );
     });
-
-
 }
 
-frame();
+frame()

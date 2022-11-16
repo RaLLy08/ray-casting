@@ -53,7 +53,7 @@ class Vector extends VectorPlain {
     fullAngle() {
         const angle = Math.atan2(this.y, this.x);
 
-        if (angle < 0) return angle + 2 * Math.PI;
+        // if (angle < 0) return angle + 2 * Math.PI
 
         return angle;
     }
